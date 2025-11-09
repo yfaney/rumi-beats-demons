@@ -179,6 +179,30 @@ export const Game = () => {
         ctx.fillStyle = '#78350f';
         const handleX = player.facingRight ? swordX - 8 : swordX + 50;
         ctx.fillRect(handleX, player.position.y + 12, 8, 16);
+        
+        // White crescent slash effect
+        const crescentX = player.facingRight ? 
+          player.position.x + player.width + 10 : 
+          player.position.x - 60;
+        const crescentY = player.position.y + 20;
+        
+        ctx.save();
+        ctx.translate(crescentX + 30, crescentY + 15);
+        if (!player.facingRight) {
+          ctx.scale(-1, 1);
+        }
+        
+        // Draw white crescent (arc shape)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 8;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(0, 0, 35, -0.5, 0.5, false);
+        ctx.stroke();
+        
+        ctx.shadowBlur = 0;
+        ctx.restore();
       }
       
       // Character glow (yellow)
