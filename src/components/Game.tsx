@@ -125,17 +125,23 @@ export const Game = () => {
     const player = state.player;
     if (player.isKnockedDown) {
       // Knocked down animation (kneeling)
-      ctx.fillStyle = '#e91e63';
+      ctx.fillStyle = '#fbbf24';
       ctx.fillRect(player.position.x, player.position.y + 30, player.width, 40);
       ctx.fillRect(player.position.x + 10, player.position.y + 50, 30, 20);
     } else {
-      // Body
-      ctx.fillStyle = '#e91e63';
+      // Body (yellow clothes)
+      ctx.fillStyle = '#fbbf24';
       ctx.fillRect(player.position.x, player.position.y, player.width, player.height);
       
-      // Hair
-      ctx.fillStyle = '#1e1b4b';
+      // Purple hair (ponytail base)
+      ctx.fillStyle = '#7c3aed';
       ctx.fillRect(player.position.x + 5, player.position.y - 10, 40, 15);
+      
+      // Ponytail (extends backwards)
+      const ponytailX = player.facingRight ? player.position.x - 15 : player.position.x + 20;
+      ctx.fillStyle = '#7c3aed';
+      ctx.fillRect(ponytailX, player.position.y - 5, 25, 10);
+      ctx.fillRect(ponytailX + (player.facingRight ? -10 : 10), player.position.y, 20, 8);
       
       // Face
       ctx.fillStyle = '#fef3c7';
@@ -148,20 +154,35 @@ export const Game = () => {
       
       // Sword
       if (player.isAttacking) {
-        ctx.fillStyle = '#94a3b8';
         const swordX = player.facingRight ? 
           player.position.x + player.width : 
-          player.position.x - 40;
-        ctx.fillRect(swordX, player.position.y + 20, 40, 8);
+          player.position.x - 50;
         
-        // Sword glow
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(swordX, player.position.y + 20, 40, 8);
+        // Sword blade (silver with animated glow)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(swordX, player.position.y + 15, 50, 10);
+        
+        // Sword edge highlight
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(swordX, player.position.y + 15, 50, 3);
+        
+        // Animated sword glow/slash effect
+        const glowIntensity = Math.sin(player.attackFrame * 0.5) * 0.5 + 0.5;
+        ctx.shadowColor = '#3b82f6';
+        ctx.shadowBlur = 15 * glowIntensity;
+        ctx.strokeStyle = `rgba(59, 130, 246, ${0.8 * glowIntensity})`;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(swordX, player.position.y + 15, 50, 10);
+        ctx.shadowBlur = 0;
+        
+        // Sword handle
+        ctx.fillStyle = '#78350f';
+        const handleX = player.facingRight ? swordX - 8 : swordX + 50;
+        ctx.fillRect(handleX, player.position.y + 12, 8, 16);
       }
       
-      // Character glow
-      ctx.strokeStyle = '#e91e63';
+      // Character glow (yellow)
+      ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 3;
       ctx.strokeRect(player.position.x, player.position.y, player.width, player.height);
     }

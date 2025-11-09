@@ -1,7 +1,7 @@
 import { GameState, Player, Enemy, Platform, Position } from "@/types/game";
 
 const GRAVITY = 0.5;
-const JUMP_FORCE = -12;
+const JUMP_FORCE = -18;
 const MOVE_SPEED = 5;
 const STAGE_WIDTH = 19200;
 const STAGE_HEIGHT = 1080;
