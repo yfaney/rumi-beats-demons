@@ -21,13 +21,16 @@ export const Game = () => {
         handleJump(gameState);
       }
 
-      const isSpace =
+      const isAttack =
         e.code === 'Space' ||
+        e.code === 'Enter' ||
+        e.code === 'NumpadEnter' ||
+        e.code === 'Period' ||
         e.key === ' ' ||
-        key === 'space' ||
-        key === 'spacebar';
+        key === 'enter' ||
+        key === '.';
 
-      if (isSpace && !gameState.player.isKnockedDown) {
+      if (isAttack && !gameState.player.isKnockedDown) {
         e.preventDefault();
         handleAttack(gameState);
       }
@@ -292,7 +295,7 @@ export const Game = () => {
       ctx.fillStyle = '#ffffff';
       ctx.font = '18px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('W: Jump | A/D: Move | S: Duck | Space: Attack', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100);
+      ctx.fillText('W: Jump | A/D: Move | S: Duck | Space/Enter/.: Attack', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100);
       ctx.textAlign = 'left';
     }
   };
