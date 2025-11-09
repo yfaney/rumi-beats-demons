@@ -20,7 +20,14 @@ export const Game = () => {
       if (key === 'w' && !gameState.player.isKnockedDown) {
         handleJump(gameState);
       }
-      if (key === ' ' && !gameState.player.isKnockedDown) {
+
+      const isSpace =
+        e.code === 'Space' ||
+        e.key === ' ' ||
+        key === 'space' ||
+        key === 'spacebar';
+
+      if (isSpace && !gameState.player.isKnockedDown) {
         e.preventDefault();
         handleAttack(gameState);
       }
