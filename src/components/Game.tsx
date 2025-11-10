@@ -100,48 +100,129 @@ export const Game = () => {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    // Draw stars
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 100; i++) {
+      const x = (i * 137) % SCREEN_WIDTH;
+      const y = (i * 73) % (SCREEN_HEIGHT * 0.6);
+      const size = (i % 3) + 1;
+      ctx.fillRect(x, y, size, size);
+    }
+
     // Save context and apply camera transform
     ctx.save();
     ctx.translate(-state.camera.x, 0);
 
-    // Draw platforms
-    ctx.fillStyle = '#3d2f4d';
-    ctx.strokeStyle = '#e91e63';
-    ctx.lineWidth = 2;
+    // Draw platforms as buildings
     for (const platform of state.platforms) {
+      // Building body
+      ctx.fillStyle = '#555555';
       ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      
+      // Windows
+      const windowRows = Math.floor(platform.height / 30);
+      const windowCols = Math.floor(platform.width / 40);
+      for (let row = 0; row < windowRows; row++) {
+        for (let col = 0; col < windowCols; col++) {
+          const isLit = Math.random() > 0.3;
+          ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
+          const wx = platform.x + 10 + col * 40;
+          const wy = platform.y + 10 + row * 30;
+          ctx.fillRect(wx, wy, 20, 15);
+        }
+      }
+      
+      // Building outline
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 2;
       ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
     }
 
+    // Draw gate at the end
+    const gateX = 10000 - 100;
+    const gateY = 900 - 200;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(gateX, gateY, 80, 200);
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(gateX, gateY, 80, 200);
+    
+    // Gate glow effect
+    ctx.shadowColor = '#7c3aed';
+    ctx.shadowBlur = 20;
+    ctx.strokeRect(gateX, gateY, 80, 200);
+    ctx.shadowBlur = 0;
+
     // Draw enemies (demons)
     for (const enemy of state.enemies) {
-      // Body
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
-      
-      // Horns
-      ctx.fillStyle = '#7f1d1d';
-      ctx.beginPath();
-      ctx.moveTo(enemy.position.x + 10, enemy.position.y);
-      ctx.lineTo(enemy.position.x + 15, enemy.position.y - 15);
-      ctx.lineTo(enemy.position.x + 20, enemy.position.y);
-      ctx.fill();
-      
-      ctx.beginPath();
-      ctx.moveTo(enemy.position.x + 30, enemy.position.y);
-      ctx.lineTo(enemy.position.x + 35, enemy.position.y - 15);
-      ctx.lineTo(enemy.position.x + 40, enemy.position.y);
-      ctx.fill();
-      
-      // Eyes
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(enemy.position.x + 15, enemy.position.y + 15, 8, 8);
-      ctx.fillRect(enemy.position.x + 27, enemy.position.y + 15, 8, 8);
-      
-      // Glow effect
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
+      if (enemy.isDying) {
+        // Evaporation animation
+        const frame = enemy.dyingFrame || 0;
+        const opacity = 1 - (frame / 20);
+        const scale = 1 + (frame / 20) * 0.5;
+        
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.translate(enemy.position.x + enemy.width / 2, enemy.position.y + enemy.height / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-enemy.width / 2, -enemy.height / 2);
+        
+        // Fading demon
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(0, 0, enemy.width, enemy.height);
+        
+        // Smoke particles
+        for (let i = 0; i < 5; i++) {
+          const px = Math.random() * enemy.width;
+          const py = -frame * 2 + Math.random() * 20;
+          ctx.fillStyle = `rgba(220, 38, 38, ${opacity * 0.5})`;
+          ctx.fillRect(px, py, 4, 4);
+        }
+        
+        ctx.restore();
+      } else {
+        // Body
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
+        
+        // Horns
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.moveTo(enemy.position.x + 10, enemy.position.y);
+        ctx.lineTo(enemy.position.x + 15, enemy.position.y - 15);
+        ctx.lineTo(enemy.position.x + 20, enemy.position.y);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(enemy.position.x + 30, enemy.position.y);
+        ctx.lineTo(enemy.position.x + 35, enemy.position.y - 15);
+        ctx.lineTo(enemy.position.x + 40, enemy.position.y);
+        ctx.fill();
+        
+        // Eyes
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(enemy.position.x + 15, enemy.position.y + 15, 8, 8);
+        ctx.fillRect(enemy.position.x + 27, enemy.position.y + 15, 8, 8);
+        
+        // Canines/Fangs
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(enemy.position.x + 18, enemy.position.y + 35);
+        ctx.lineTo(enemy.position.x + 20, enemy.position.y + 30);
+        ctx.lineTo(enemy.position.x + 22, enemy.position.y + 35);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(enemy.position.x + 28, enemy.position.y + 35);
+        ctx.lineTo(enemy.position.x + 30, enemy.position.y + 30);
+        ctx.lineTo(enemy.position.x + 32, enemy.position.y + 35);
+        ctx.fill();
+        
+        // Glow effect
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
+      }
     }
 
     // Draw player (Rumi)
@@ -160,8 +241,8 @@ export const Game = () => {
       ctx.fillStyle = '#7c3aed';
       ctx.fillRect(player.position.x + 5, player.position.y - 10, 40, 15);
       
-      // Ponytail (extends backwards)
-      const ponytailX = player.facingRight ? player.position.x - 15 : player.position.x + 20;
+      // Ponytail (extends backwards based on direction)
+      const ponytailX = player.facingRight ? player.position.x - 15 : player.position.x + player.width - 10;
       ctx.fillStyle = '#7c3aed';
       ctx.fillRect(ponytailX, player.position.y - 5, 25, 10);
       ctx.fillRect(ponytailX + (player.facingRight ? -10 : 10), player.position.y, 20, 8);
@@ -297,6 +378,26 @@ export const Game = () => {
       
       ctx.font = '24px Arial';
       ctx.fillText('Refresh to play again', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 70);
+      ctx.textAlign = 'left';
+    }
+
+    // The End screen
+    if (state.isGameEnded) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      
+      ctx.fillStyle = '#7c3aed';
+      ctx.font = 'bold 96px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('THE END', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 36px Arial';
+      ctx.fillText(`Final Score: ${state.score}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 30);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '24px Arial';
+      ctx.fillText('Refresh to play again', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 80);
       ctx.textAlign = 'left';
     }
 

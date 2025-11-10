@@ -31,6 +31,8 @@ export interface Enemy {
   hp: number;
   direction: number;
   platformIndex: number;
+  isDying?: boolean;
+  dyingFrame?: number;
 }
 
 export interface Platform {
@@ -48,4 +50,5 @@ export interface GameState {
   camera: { x: number; y: number };
   keys: { [key: string]: boolean };
   killCount: number;
+  isGameEnded?: boolean;
 }

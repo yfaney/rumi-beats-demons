@@ -62,21 +62,35 @@ export const createInitialState = (): GameState => {
     camera: { x: 0, y: 0 },
     keys: {},
     killCount: 0,
+    isGameEnded: false,
   };
 };
 
 export const updateGameState = (state: GameState): GameState => {
-  if (state.player.isKnockedDown) return state;
+  if (state.player.isKnockedDown || state.isGameEnded) return state;
 
   const newState = { ...state };
+  
+  // Check if player reached the gate (end of map)
+  const gateX = STAGE_WIDTH - 100;
+  if (newState.player.position.x + newState.player.width > gateX) {
+    newState.isGameEnded = true;
+    return newState;
+  }
   
   // Update player
   newState.player = updatePlayer(state.player, state.keys, state.platforms);
   
   // Update enemies
   newState.enemies = state.enemies
-    .map(enemy => updateEnemy(enemy, state.platforms))
-    .filter(enemy => enemy.hp > 0);
+    .map(enemy => {
+      if (enemy.isDying) {
+        const updatedEnemy = { ...enemy, dyingFrame: (enemy.dyingFrame || 0) + 1 };
+        return updatedEnemy;
+      }
+      return updateEnemy(enemy, state.platforms);
+    })
+    .filter(enemy => !enemy.isDying || (enemy.dyingFrame || 0) < 20); // Remove after evaporation
 
   // Check attack collisions
   if (newState.player.isAttacking && newState.player.attackFrame < 10) {
@@ -105,7 +119,8 @@ export const updateGameState = (state: GameState): GameState => {
           newState.player.hp = Math.min(newState.player.hp + 1, newState.player.maxHp);
         }
         
-        return false; // Remove enemy
+        enemy.isDying = true;
+        enemy.dyingFrame = 0;
       }
       return true;
     });
@@ -113,7 +128,7 @@ export const updateGameState = (state: GameState): GameState => {
 
   // Check enemy collisions with player
   for (const enemy of newState.enemies) {
-    if (checkCollision(newState.player.position, newState.player, enemy.position, enemy)) {
+    if (!enemy.isDying && checkCollision(newState.player.position, newState.player, enemy.position, enemy)) {
       newState.player.hp = Math.max(0, newState.player.hp - 1);
       // Knockback
       newState.player.velocity.x = enemy.position.x < newState.player.position.x ? 10 : -10;
