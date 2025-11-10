@@ -17,8 +17,14 @@ export const Game = () => {
       const key = e.key.toLowerCase();
       keysRef.current[key] = true;
       
-      if (key === 'w' && !gameState.player.isKnockedDown) {
-        handleJump(gameState);
+      if (key === 'w') {
+        setGameState((prev) => {
+          const s = { ...prev, player: { ...prev.player } };
+          if (!s.player.isKnockedDown) {
+            handleJump(s);
+          }
+          return s;
+        });
       }
 
       const isAttack =
@@ -30,9 +36,15 @@ export const Game = () => {
         key === 'enter' ||
         key === '.';
 
-      if (isAttack && !gameState.player.isKnockedDown) {
+      if (isAttack) {
         e.preventDefault();
-        handleAttack(gameState);
+        setGameState((prev) => {
+          const s = { ...prev, player: { ...prev.player } };
+          if (!s.player.isKnockedDown) {
+            handleAttack(s);
+          }
+          return s;
+        });
       }
     };
 
@@ -47,7 +59,7 @@ export const Game = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameState]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -57,11 +69,12 @@ export const Game = () => {
     if (!ctx) return;
 
     const gameLoop = () => {
-      gameState.keys = keysRef.current;
-      const newState = updateGameState(gameState);
-      setGameState(newState);
-      
-      render(ctx, newState);
+      setGameState((prev) => {
+        const withKeys = { ...prev, keys: keysRef.current };
+        const newState = updateGameState(withKeys);
+        render(ctx, newState);
+        return newState;
+      });
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
@@ -298,6 +311,55 @@ export const Game = () => {
       ctx.fillText('W: Jump | A/D: Move | S: Duck | Space/Enter/.: Attack', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100);
       ctx.textAlign = 'left';
     }
+
+    // Minimap (bottom-left)
+    const stageWidth = state.platforms[0]?.width ?? 10000;
+    const minimapWidth = 240;
+    const minimapHeight = 80;
+    const mmX = 20;
+    const mmY = SCREEN_HEIGHT - minimapHeight - 20;
+
+    // Minimap background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(mmX, mmY, minimapWidth, minimapHeight);
+    ctx.strokeStyle = '#e91e63';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mmX, mmY, minimapWidth, minimapHeight);
+
+    const scaleX = minimapWidth / stageWidth;
+    const scaleY = minimapHeight / SCREEN_HEIGHT;
+
+    // Platforms on minimap
+    ctx.fillStyle = '#3d2f4d';
+    for (const p of state.platforms) {
+      const px = mmX + p.x * scaleX;
+      const py = mmY + p.y * scaleY;
+      const pw = Math.max(1, p.width * scaleX);
+      const ph = Math.max(2, p.height * scaleY);
+      ctx.fillRect(px, py, pw, Math.max(2, ph));
+    }
+
+    // Camera viewport
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    const camX = mmX + state.camera.x * scaleX;
+    const camW = SCREEN_WIDTH * scaleX;
+    ctx.strokeRect(camX, mmY, camW, minimapHeight);
+
+    // Player on minimap
+    ctx.fillStyle = '#fbbf24';
+    const playerX = mmX + (state.player.position.x + state.player.width / 2) * scaleX;
+    const playerY = mmY + (state.player.position.y + state.player.height / 2) * scaleY;
+    ctx.fillRect(playerX - 2, playerY - 2, 4, 4);
+
+    // Enemies on minimap
+    ctx.fillStyle = '#dc2626';
+    for (const en of state.enemies) {
+      const ex = mmX + (en.position.x + en.width / 2) * scaleX;
+      const ey = mmY + (en.position.y + en.height / 2) * scaleY;
+      ctx.fillRect(ex - 2, ey - 2, 4, 4);
+    }
+
   };
 
   return (

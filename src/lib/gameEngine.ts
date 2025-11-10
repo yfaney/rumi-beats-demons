@@ -2,32 +2,26 @@ import { GameState, Player, Enemy, Platform, Position } from "@/types/game";
 
 const GRAVITY = 0.5;
 const JUMP_FORCE = -18;
-const MOVE_SPEED = 5;
-const STAGE_WIDTH = 19200;
+const MOVE_SPEED = 7.5;
+const STAGE_WIDTH = 10000;
 const STAGE_HEIGHT = 1080;
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
 
 export const createInitialState = (): GameState => {
-  const platforms: Platform[] = [
-    // Ground
-    { x: 0, y: 900, width: STAGE_WIDTH, height: 100 },
-    // Floating platforms
-    { x: 500, y: 700, width: 400, height: 30 },
-    { x: 1200, y: 550, width: 400, height: 30 },
-    { x: 1900, y: 700, width: 400, height: 30 },
-    { x: 2600, y: 550, width: 400, height: 30 },
-    { x: 3300, y: 700, width: 400, height: 30 },
-    { x: 4000, y: 550, width: 400, height: 30 },
-    { x: 4700, y: 700, width: 400, height: 30 },
-    { x: 5400, y: 550, width: 400, height: 30 },
-    { x: 6100, y: 700, width: 400, height: 30 },
-    { x: 6800, y: 550, width: 400, height: 30 },
-    { x: 7500, y: 700, width: 400, height: 30 },
-    { x: 8200, y: 550, width: 400, height: 30 },
-    { x: 8900, y: 700, width: 400, height: 30 },
-    { x: 9600, y: 550, width: 400, height: 30 },
-  ];
+  const platforms: Platform[] = [];
+  // Ground
+  platforms.push({ x: 0, y: 900, width: STAGE_WIDTH, height: 100 });
+  
+  // Procedurally generate floating platforms
+  let xPos = 400;
+  while (xPos < STAGE_WIDTH - 800) {
+    const width = 300 + Math.floor(Math.random() * 200); // 300-500
+    const y = 520 + Math.floor(Math.random() * 260); // 520-780
+    platforms.push({ x: xPos, y, width, height: 30 });
+    // Advance with random gaps 200-600
+    xPos += width + 200 + Math.floor(Math.random() * 400);
+  }
 
   const enemies: Enemy[] = [];
   for (let i = 0; i < 15; i++) {
@@ -228,10 +222,13 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[]): Enemy => {
   newEnemy.velocity.x = newEnemy.direction * 2;
   newEnemy.position.x += newEnemy.velocity.x;
 
-  // Turn around at platform edges
-  if (newEnemy.position.x < platform.x || newEnemy.position.x + newEnemy.width > platform.x + platform.width) {
+  // Turn around at platform edges and clamp within bounds
+  const leftBound = platform.x;
+  const rightBound = platform.x + platform.width - newEnemy.width;
+  if (newEnemy.position.x <= leftBound || newEnemy.position.x >= rightBound) {
     newEnemy.direction *= -1;
   }
+  newEnemy.position.x = Math.max(leftBound, Math.min(newEnemy.position.x, rightBound));
 
   // Apply gravity
   newEnemy.velocity.y += GRAVITY;
