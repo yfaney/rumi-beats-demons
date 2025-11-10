@@ -113,27 +113,42 @@ export const Game = () => {
     ctx.save();
     ctx.translate(-state.camera.x, 0);
 
-    // Draw platforms as buildings
-    for (const platform of state.platforms) {
-      // Building body
-      ctx.fillStyle = '#555555';
-      ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+    // Draw buildings under platforms (visual only, not ground)
+    const groundY = 900;
+    for (let i = 1; i < state.platforms.length; i++) {
+      const platform = state.platforms[i];
+      const buildingHeight = groundY - (platform.y + platform.height);
       
-      // Windows
-      const windowRows = Math.floor(platform.height / 30);
-      const windowCols = Math.floor(platform.width / 40);
-      for (let row = 0; row < windowRows; row++) {
-        for (let col = 0; col < windowCols; col++) {
-          const isLit = Math.random() > 0.3;
-          ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
-          const wx = platform.x + 10 + col * 40;
-          const wy = platform.y + 10 + row * 30;
-          ctx.fillRect(wx, wy, 20, 15);
+      if (buildingHeight > 0) {
+        // Building body
+        ctx.fillStyle = '#555555';
+        ctx.fillRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
+        
+        // Windows
+        const windowRows = Math.floor(buildingHeight / 30);
+        const windowCols = Math.floor(platform.width / 40);
+        for (let row = 0; row < windowRows; row++) {
+          for (let col = 0; col < windowCols; col++) {
+            const isLit = Math.random() > 0.3;
+            ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
+            const wx = platform.x + 10 + col * 40;
+            const wy = platform.y + platform.height + 10 + row * 30;
+            ctx.fillRect(wx, wy, 20, 15);
+          }
         }
+        
+        // Building outline
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
       }
-      
-      // Building outline
-      ctx.strokeStyle = '#333333';
+    }
+
+    // Draw platforms (simple)
+    for (const platform of state.platforms) {
+      ctx.fillStyle = '#3d2f4d';
+      ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      ctx.strokeStyle = '#e91e63';
       ctx.lineWidth = 2;
       ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
     }
