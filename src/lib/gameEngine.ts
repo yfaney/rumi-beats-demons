@@ -139,7 +139,7 @@ export const updateGameState = (state: GameState): GameState => {
         enemy.position.x > newState.player.position.x :
         enemy.position.x < newState.player.position.x;
 
-      if (inRange && facingEnemy) {
+      if (inRange && facingEnemy && !enemy.isDying) {
         newState.score += 10;
         newState.killCount += 1;
         
