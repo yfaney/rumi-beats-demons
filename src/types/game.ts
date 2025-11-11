@@ -20,6 +20,8 @@ export interface Player {
   isKnockedDown: boolean;
   attackFrame: number;
   facingRight: boolean;
+  isInvincible: boolean;
+  invincibilityEndTime: number;
 }
 
 export interface Enemy {
@@ -51,4 +53,6 @@ export interface GameState {
   keys: { [key: string]: boolean };
   killCount: number;
   isGameEnded?: boolean;
+  windowLightTime: number;
+  windowLightStates: boolean[];
 }

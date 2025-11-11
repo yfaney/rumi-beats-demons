@@ -129,7 +129,8 @@ export const Game = () => {
         const windowCols = Math.floor(platform.width / 40);
         for (let row = 0; row < windowRows; row++) {
           for (let col = 0; col < windowCols; col++) {
-            const isLit = Math.random() > 0.3;
+            const windowIndex = (i * 100 + row * 10 + col) % state.windowLightStates.length;
+            const isLit = state.windowLightStates[windowIndex];
             ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
             const wx = platform.x + 10 + col * 40;
             const wy = platform.y + platform.height + 10 + row * 30;
@@ -242,6 +243,16 @@ export const Game = () => {
 
     // Draw player (Rumi)
     const player = state.player;
+    
+    // Apply flashing effect if invincible
+    if (player.isInvincible) {
+      const flashSpeed = 8;
+      const flashFrame = Math.floor(Date.now() / 100) % flashSpeed;
+      if (flashFrame < flashSpeed / 2) {
+        ctx.globalAlpha = 0.5;
+      }
+    }
+    
     if (player.isKnockedDown) {
       // Knocked down animation (kneeling)
       ctx.fillStyle = '#fbbf24';
@@ -324,11 +335,14 @@ export const Game = () => {
         ctx.restore();
       }
       
-      // Character glow (yellow)
-      ctx.strokeStyle = '#fbbf24';
+      // Character glow (yellow or white if invincible)
+      ctx.strokeStyle = player.isInvincible ? '#ffffff' : '#fbbf24';
       ctx.lineWidth = 3;
       ctx.strokeRect(player.position.x, player.position.y, player.width, player.height);
     }
+    
+    // Reset alpha
+    ctx.globalAlpha = 1.0;
 
     ctx.restore();
 

@@ -55,14 +55,31 @@ export const createInitialState = (): GameState => {
       isKnockedDown: false,
       attackFrame: 0,
       facingRight: true,
+      isInvincible: false,
+      invincibilityEndTime: 0,
     },
-    enemies,
+    enemies: [
+      ...enemies,
+      // Add 10 ground mobs
+      ...Array.from({ length: 10 }, (_, i) => ({
+        id: 1000 + i,
+        position: { x: 1500 + i * 800, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0, // Ground platform
+      }))
+    ],
     platforms,
     score: 0,
     camera: { x: 0, y: 0 },
     keys: {},
     killCount: 0,
     isGameEnded: false,
+    windowLightTime: Date.now(),
+    windowLightStates: Array.from({ length: 100 }, () => Math.random() > 0.3),
   };
 };
 
@@ -70,6 +87,18 @@ export const updateGameState = (state: GameState): GameState => {
   if (state.player.isKnockedDown || state.isGameEnded) return state;
 
   const newState = { ...state };
+  
+  // Update invincibility state
+  const currentTime = Date.now();
+  if (newState.player.isInvincible && currentTime > newState.player.invincibilityEndTime) {
+    newState.player.isInvincible = false;
+  }
+  
+  // Update window lights every 5 seconds
+  if (currentTime - newState.windowLightTime > 5000) {
+    newState.windowLightTime = currentTime;
+    newState.windowLightStates = Array.from({ length: 100 }, () => Math.random() > 0.3);
+  }
   
   // Check if player reached the gate (end of map)
   const gateX = STAGE_WIDTH - 100;
@@ -129,10 +158,14 @@ export const updateGameState = (state: GameState): GameState => {
   // Check enemy collisions with player
   for (const enemy of newState.enemies) {
     if (!enemy.isDying && checkCollision(newState.player.position, newState.player, enemy.position, enemy)) {
-      newState.player.hp = Math.max(0, newState.player.hp - 1);
-      // Knockback
-      newState.player.velocity.x = enemy.position.x < newState.player.position.x ? 10 : -10;
-      newState.player.velocity.y = -8;
+      if (!newState.player.isInvincible) {
+        newState.player.hp = Math.max(0, newState.player.hp - 1);
+        newState.player.isInvincible = true;
+        newState.player.invincibilityEndTime = Date.now() + 3000; // 3 seconds
+        // Knockback
+        newState.player.velocity.x = enemy.position.x < newState.player.position.x ? 10 : -10;
+        newState.player.velocity.y = -8;
+      }
     }
   }
 
