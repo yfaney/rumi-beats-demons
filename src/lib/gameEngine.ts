@@ -85,6 +85,7 @@ export const createInitialState = (): GameState => {
         platformIndex: 0,
         type: 'blue' as const,
         lastShootTime: 0,
+        nextShootTime: 5000 + Math.random() * 5000,
       }))
     ],
     projectiles: [],
@@ -262,6 +263,7 @@ export const updateGameState = (state: GameState): GameState => {
       platformIndex,
       type: isBlue ? 'blue' : 'red',
       lastShootTime: isBlue ? Date.now() : undefined,
+      nextShootTime: isBlue ? Date.now() + 5000 + Math.random() * 5000 : undefined,
     });
   }
 
@@ -333,9 +335,11 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, p
   const newEnemy = { ...enemy };
   const platform = platforms[enemy.platformIndex];
 
-  // Simple AI: move back and forth on platform
-  newEnemy.velocity.x = newEnemy.direction * 2;
-  newEnemy.position.x += newEnemy.velocity.x;
+  // Simple AI: move back and forth on platform (unless charging)
+  if (!newEnemy.isCharging) {
+    newEnemy.velocity.x = newEnemy.direction * 2;
+    newEnemy.position.x += newEnemy.velocity.x;
+  }
 
   // Turn around at platform edges and clamp within bounds
   const leftBound = platform.x;
@@ -363,28 +367,48 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, p
 
   // Blue demons shoot knives
   if (newEnemy.type === 'blue') {
-    const shootInterval = 3000; // Shoot every 3 seconds
-    const lastShoot = newEnemy.lastShootTime || 0;
+    // Initialize next shoot time if not set
+    if (!newEnemy.nextShootTime) {
+      newEnemy.nextShootTime = currentTime + 5000 + Math.random() * 5000; // 5-10 seconds
+    }
     
-    if (currentTime - lastShoot > shootInterval) {
-      newEnemy.lastShootTime = currentTime;
+    // Check if it's time to start charging
+    if (!newEnemy.isCharging && currentTime >= newEnemy.nextShootTime - 1000) {
+      newEnemy.isCharging = true;
+      newEnemy.chargeStartTime = currentTime;
+    }
+    
+    // If charging, stop movement
+    if (newEnemy.isCharging) {
+      const chargeDuration = currentTime - (newEnemy.chargeStartTime || currentTime);
       
-      // Create projectile
-      const knifeSpeed = 2.4; // 1.2x mob speed
-      projectiles.push({
-        id: Date.now() + Math.random(),
-        position: {
-          x: newEnemy.position.x + (newEnemy.direction > 0 ? newEnemy.width : 0),
-          y: newEnemy.position.y + newEnemy.height / 2 - 2,
-        },
-        velocity: {
-          x: newEnemy.direction * knifeSpeed,
-          y: 0,
-        },
-        width: 20,
-        height: 4,
-        ownerId: newEnemy.id,
-      });
+      if (chargeDuration < 1000) {
+        // Stop moving during charge
+        newEnemy.velocity.x = 0;
+        newEnemy.position.x = newEnemy.position.x; // Hold position
+      } else {
+        // Charge complete, shoot knife
+        newEnemy.isCharging = false;
+        newEnemy.lastShootTime = currentTime;
+        newEnemy.nextShootTime = currentTime + 5000 + Math.random() * 5000; // Next shoot in 5-10 seconds
+        
+        // Create projectile
+        const knifeSpeed = 2.4; // 1.2x mob speed
+        projectiles.push({
+          id: Date.now() + Math.random(),
+          position: {
+            x: newEnemy.position.x + (newEnemy.direction > 0 ? newEnemy.width : 0),
+            y: newEnemy.position.y + newEnemy.height / 2 - 2,
+          },
+          velocity: {
+            x: newEnemy.direction * knifeSpeed,
+            y: 0,
+          },
+          width: 20,
+          height: 4,
+          ownerId: newEnemy.id,
+        });
+      }
     }
   }
 

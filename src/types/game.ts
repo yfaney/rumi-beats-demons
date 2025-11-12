@@ -46,6 +46,9 @@ export interface Enemy {
   dyingFrame?: number;
   type: 'red' | 'blue';
   lastShootTime?: number;
+  nextShootTime?: number;
+  isCharging?: boolean;
+  chargeStartTime?: number;
 }
 
 export interface Platform {
