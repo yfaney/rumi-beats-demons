@@ -109,6 +109,31 @@ export const Game = () => {
       ctx.fillRect(x, y, size, size);
     }
 
+    // Draw crescent moon (top-right corner)
+    const moonX = SCREEN_WIDTH - 150;
+    const moonY = 100;
+    const moonRadius = 50;
+    
+    // Full moon circle
+    ctx.fillStyle = '#f0f0f0';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Shadow to create crescent
+    ctx.fillStyle = '#0d0616';
+    ctx.beginPath();
+    ctx.arc(moonX + 20, moonY - 10, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Moon glow
+    ctx.shadowColor = '#f0f0f0';
+    ctx.shadowBlur = 30;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
     // Save context and apply camera transform
     ctx.save();
     ctx.translate(-state.camera.x, 0);
@@ -171,6 +196,11 @@ export const Game = () => {
 
     // Draw enemies (demons)
     for (const enemy of state.enemies) {
+      const isBlue = enemy.type === 'blue';
+      const bodyColor = isBlue ? '#2563eb' : '#dc2626';
+      const hornColor = isBlue ? '#1e3a8a' : '#7f1d1d';
+      const glowColor = isBlue ? '#3b82f6' : '#ef4444';
+      
       if (enemy.isDying) {
         // Evaporation animation
         const frame = enemy.dyingFrame || 0;
@@ -184,25 +214,26 @@ export const Game = () => {
         ctx.translate(-enemy.width / 2, -enemy.height / 2);
         
         // Fading demon
-        ctx.fillStyle = '#dc2626';
+        ctx.fillStyle = bodyColor;
         ctx.fillRect(0, 0, enemy.width, enemy.height);
         
         // Smoke particles
         for (let i = 0; i < 5; i++) {
           const px = Math.random() * enemy.width;
           const py = -frame * 2 + Math.random() * 20;
-          ctx.fillStyle = `rgba(220, 38, 38, ${opacity * 0.5})`;
+          const particleColor = isBlue ? 'rgba(37, 99, 235, ' : 'rgba(220, 38, 38, ';
+          ctx.fillStyle = particleColor + (opacity * 0.5) + ')';
           ctx.fillRect(px, py, 4, 4);
         }
         
         ctx.restore();
       } else {
         // Body
-        ctx.fillStyle = '#dc2626';
+        ctx.fillStyle = bodyColor;
         ctx.fillRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
         
         // Horns
-        ctx.fillStyle = '#7f1d1d';
+        ctx.fillStyle = hornColor;
         ctx.beginPath();
         ctx.moveTo(enemy.position.x + 10, enemy.position.y);
         ctx.lineTo(enemy.position.x + 15, enemy.position.y - 15);
@@ -235,10 +266,25 @@ export const Game = () => {
         ctx.fill();
         
         // Glow effect
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = glowColor;
         ctx.lineWidth = 2;
         ctx.strokeRect(enemy.position.x, enemy.position.y, enemy.width, enemy.height);
       }
+    }
+
+    // Draw projectiles (knives)
+    for (const proj of state.projectiles) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(proj.position.x, proj.position.y, proj.width, proj.height);
+      
+      // Knife edge highlight
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(proj.position.x, proj.position.y, proj.width * 0.3, proj.height);
+      
+      // Slight glow
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(proj.position.x, proj.position.y, proj.width, proj.height);
     }
 
     // Draw player (Rumi)

@@ -39,6 +39,7 @@ export const createInitialState = (): GameState => {
       hp: 1,
       direction: Math.random() > 0.5 ? 1 : -1,
       platformIndex,
+      type: 'red',
     });
   }
 
@@ -60,18 +61,33 @@ export const createInitialState = (): GameState => {
     },
     enemies: [
       ...enemies,
-      // Add 10 ground mobs
-      ...Array.from({ length: 10 }, (_, i) => ({
+      // Add 10 ground red demons
+      ...Array.from({ length: 8 }, (_, i) => ({
         id: 1000 + i,
-        position: { x: 1500 + i * 800, y: 840 },
+        position: { x: 1500 + i * 1000, y: 840 },
         velocity: { x: 0, y: 0 },
         width: 50,
         height: 60,
         hp: 1,
         direction: Math.random() > 0.5 ? 1 : -1,
-        platformIndex: 0, // Ground platform
+        platformIndex: 0,
+        type: 'red' as const,
+      })),
+      // Add 2 ground blue demons (1:5 ratio)
+      ...Array.from({ length: 2 }, (_, i) => ({
+        id: 2000 + i,
+        position: { x: 3000 + i * 3000, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0,
+        type: 'blue' as const,
+        lastShootTime: 0,
       }))
     ],
+    projectiles: [],
     platforms,
     score: 0,
     camera: { x: 0, y: 0 },
@@ -102,7 +118,13 @@ export const updateGameState = (state: GameState): GameState => {
   
   // Check if player reached the gate (end of map)
   const gateX = STAGE_WIDTH - 100;
-  if (newState.player.position.x + newState.player.width > gateX) {
+  const gateY = 900 - 200;
+  const gateHeight = 200;
+  if (
+    newState.player.position.x + newState.player.width > gateX &&
+    newState.player.position.y + newState.player.height > gateY &&
+    newState.player.position.y < gateY + gateHeight
+  ) {
     newState.isGameEnded = true;
     return newState;
   }
@@ -117,9 +139,51 @@ export const updateGameState = (state: GameState): GameState => {
         const updatedEnemy = { ...enemy, dyingFrame: (enemy.dyingFrame || 0) + 1 };
         return updatedEnemy;
       }
-      return updateEnemy(enemy, state.platforms);
+      return updateEnemy(enemy, state.platforms, currentTime, newState.projectiles);
     })
     .filter(enemy => !enemy.isDying || (enemy.dyingFrame || 0) < 20); // Remove after evaporation
+
+  // Update projectiles
+  newState.projectiles = state.projectiles
+    .map(proj => ({
+      ...proj,
+      position: {
+        x: proj.position.x + proj.velocity.x,
+        y: proj.position.y + proj.velocity.y,
+      },
+    }))
+    .filter(proj => 
+      proj.position.x > -100 && 
+      proj.position.x < STAGE_WIDTH + 100 &&
+      proj.position.y > -100 &&
+      proj.position.y < STAGE_HEIGHT + 100
+    );
+
+  // Check projectile collisions with player
+  for (const proj of newState.projectiles) {
+    if (checkCollision(proj.position, proj, newState.player.position, newState.player)) {
+      if (!newState.player.isInvincible) {
+        // Check if player is ducking - projectiles fly over ducked player
+        const playerTop = newState.player.position.y;
+        const playerBottom = newState.player.position.y + newState.player.height;
+        const projTop = proj.position.y;
+        const projBottom = proj.position.y + proj.height;
+        
+        const isDuckingLowEnough = newState.player.isDucking && playerTop > projBottom - 15;
+        
+        if (!isDuckingLowEnough) {
+          newState.player.hp = Math.max(0, newState.player.hp - 1);
+          newState.player.isInvincible = true;
+          newState.player.invincibilityEndTime = Date.now() + 3000;
+          // Knockback
+          newState.player.velocity.x = proj.velocity.x > 0 ? 10 : -10;
+          newState.player.velocity.y = -8;
+        }
+      }
+      // Remove projectile after hitting
+      newState.projectiles = newState.projectiles.filter(p => p.id !== proj.id);
+    }
+  }
 
   // Check attack collisions
   if (newState.player.isAttacking && newState.player.attackFrame < 10) {
@@ -183,6 +247,7 @@ export const updateGameState = (state: GameState): GameState => {
   if (newState.enemies.length < 5) {
     const platformIndex = Math.floor(Math.random() * (state.platforms.length - 1)) + 1;
     const platform = state.platforms[platformIndex];
+    const isBlue = Math.random() < 0.16; // ~1:5 ratio for blue demons
     newState.enemies.push({
       id: Date.now(),
       position: {
@@ -195,6 +260,8 @@ export const updateGameState = (state: GameState): GameState => {
       hp: 1,
       direction: Math.random() > 0.5 ? 1 : -1,
       platformIndex,
+      type: isBlue ? 'blue' : 'red',
+      lastShootTime: isBlue ? Date.now() : undefined,
     });
   }
 
@@ -262,7 +329,7 @@ const updatePlayer = (player: Player, keys: { [key: string]: boolean }, platform
   return newPlayer;
 };
 
-const updateEnemy = (enemy: Enemy, platforms: Platform[]): Enemy => {
+const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, projectiles: any[]): Enemy => {
   const newEnemy = { ...enemy };
   const platform = platforms[enemy.platformIndex];
 
@@ -292,6 +359,33 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[]): Enemy => {
   ) {
     newEnemy.position.y = platform.y - newEnemy.height;
     newEnemy.velocity.y = 0;
+  }
+
+  // Blue demons shoot knives
+  if (newEnemy.type === 'blue') {
+    const shootInterval = 3000; // Shoot every 3 seconds
+    const lastShoot = newEnemy.lastShootTime || 0;
+    
+    if (currentTime - lastShoot > shootInterval) {
+      newEnemy.lastShootTime = currentTime;
+      
+      // Create projectile
+      const knifeSpeed = 2.4; // 1.2x mob speed
+      projectiles.push({
+        id: Date.now() + Math.random(),
+        position: {
+          x: newEnemy.position.x + (newEnemy.direction > 0 ? newEnemy.width : 0),
+          y: newEnemy.position.y + newEnemy.height / 2 - 2,
+        },
+        velocity: {
+          x: newEnemy.direction * knifeSpeed,
+          y: 0,
+        },
+        width: 20,
+        height: 4,
+        ownerId: newEnemy.id,
+      });
+    }
   }
 
   return newEnemy;

@@ -24,6 +24,15 @@ export interface Player {
   invincibilityEndTime: number;
 }
 
+export interface Projectile {
+  id: number;
+  position: Position;
+  velocity: Velocity;
+  width: number;
+  height: number;
+  ownerId: number;
+}
+
 export interface Enemy {
   id: number;
   position: Position;
@@ -35,6 +44,8 @@ export interface Enemy {
   platformIndex: number;
   isDying?: boolean;
   dyingFrame?: number;
+  type: 'red' | 'blue';
+  lastShootTime?: number;
 }
 
 export interface Platform {
@@ -47,6 +58,7 @@ export interface Platform {
 export interface GameState {
   player: Player;
   enemies: Enemy[];
+  projectiles: Projectile[];
   platforms: Platform[];
   score: number;
   camera: { x: number; y: number };
