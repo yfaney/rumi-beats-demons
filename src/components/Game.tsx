@@ -114,20 +114,20 @@ export const Game = () => {
     const moonY = 100;
     const moonRadius = 50;
     
-    // Draw the crescent moon using path
+    // Draw main moon circle
     ctx.fillStyle = '#f0f0f0';
     ctx.shadowColor = '#f0f0f0';
     ctx.shadowBlur = 30;
-    
     ctx.beginPath();
-    // Main circle
-    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2, false);
-    // Cut out a circle to create crescent shape
-    ctx.arc(moonX + 30, moonY - 10, moonRadius * 0.9, 0, Math.PI * 2, true);
-    ctx.closePath();
+    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
     ctx.fill();
     
+    // Cover part with background to create crescent
     ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0d0616';
+    ctx.beginPath();
+    ctx.arc(moonX + 25, moonY - 8, moonRadius * 0.85, 0, Math.PI * 2);
+    ctx.fill();
 
     // Save context and apply camera transform
     ctx.save();

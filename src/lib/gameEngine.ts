@@ -161,7 +161,7 @@ export const updateGameState = (state: GameState): GameState => {
     );
 
   // Check projectile collisions with player
-  for (const proj of newState.projectiles) {
+  newState.projectiles = newState.projectiles.filter(proj => {
     if (checkCollision(proj.position, proj, newState.player.position, newState.player)) {
       if (!newState.player.isInvincible) {
         // Check if player is ducking - projectiles fly over ducked player
@@ -179,12 +179,12 @@ export const updateGameState = (state: GameState): GameState => {
           // Knockback
           newState.player.velocity.x = proj.velocity.x > 0 ? 10 : -10;
           newState.player.velocity.y = -8;
+          return false; // Remove projectile after hitting
         }
       }
-      // Remove projectile after hitting
-      newState.projectiles = newState.projectiles.filter(p => p.id !== proj.id);
     }
-  }
+    return true; // Keep projectile if it didn't hit or was dodged
+  });
 
   // Check attack collisions
   if (newState.player.isAttacking && newState.player.attackFrame < 10) {
@@ -276,7 +276,7 @@ const updatePlayer = (player: Player, keys: { [key: string]: boolean }, platform
   // Handle ducking
   if (keys['s'] || keys['S']) {
     newPlayer.isDucking = true;
-    newPlayer.height = 40;
+    newPlayer.height = 35; // Shorter ducking height
   } else {
     newPlayer.isDucking = false;
     newPlayer.height = 70;
@@ -392,13 +392,13 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, p
         newEnemy.lastShootTime = currentTime;
         newEnemy.nextShootTime = currentTime + 5000 + Math.random() * 5000; // Next shoot in 5-10 seconds
         
-        // Create projectile
+        // Create projectile - fly at upper body height
         const knifeSpeed = 2.4; // 1.2x mob speed
         projectiles.push({
           id: Date.now() + Math.random(),
           position: {
             x: newEnemy.position.x + (newEnemy.direction > 0 ? newEnemy.width : 0),
-            y: newEnemy.position.y + newEnemy.height / 2 - 2,
+            y: newEnemy.position.y + newEnemy.height / 3, // Higher position (upper third of enemy)
           },
           velocity: {
             x: newEnemy.direction * knifeSpeed,
