@@ -44,7 +44,7 @@ export interface Enemy {
   platformIndex: number;
   isDying?: boolean;
   dyingFrame?: number;
-  type: 'red' | 'blue';
+  type: 'red' | 'blue' | 'purple';
   lastShootTime?: number;
   nextShootTime?: number;
   isCharging?: boolean;

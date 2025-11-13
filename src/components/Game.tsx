@@ -114,7 +114,7 @@ export const Game = () => {
     const moonY = 100;
     const moonRadius = 50;
     
-    // Draw main moon circle
+    // Draw crescent moon with halo only on visible part
     ctx.fillStyle = '#f0f0f0';
     ctx.shadowColor = '#f0f0f0';
     ctx.shadowBlur = 30;
@@ -122,12 +122,16 @@ export const Game = () => {
     ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
     ctx.fill();
     
-    // Cover part with background to create crescent
+    // Cover part with background to create crescent (no shadow on this)
     ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
     ctx.fillStyle = '#0d0616';
     ctx.beginPath();
     ctx.arc(moonX + 25, moonY - 8, moonRadius * 0.85, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
 
     // Save context and apply camera transform
     ctx.save();
@@ -191,10 +195,11 @@ export const Game = () => {
 
     // Draw enemies (demons)
     for (const enemy of state.enemies) {
+      const isPurple = enemy.type === 'purple';
       const isBlue = enemy.type === 'blue';
-      const bodyColor = isBlue ? '#2563eb' : '#dc2626';
-      const hornColor = isBlue ? '#1e3a8a' : '#7f1d1d';
-      const glowColor = isBlue ? '#3b82f6' : '#ef4444';
+      const bodyColor = isPurple ? '#9333ea' : isBlue ? '#2563eb' : '#dc2626';
+      const hornColor = isPurple ? '#581c87' : isBlue ? '#1e3a8a' : '#7f1d1d';
+      const glowColor = isPurple ? '#a855f7' : isBlue ? '#3b82f6' : '#ef4444';
       
       if (enemy.isDying) {
         // Evaporation animation

@@ -62,9 +62,9 @@ export const createInitialState = (): GameState => {
     enemies: [
       ...enemies,
       // Add 10 ground red demons
-      ...Array.from({ length: 8 }, (_, i) => ({
+      ...Array.from({ length: 10 }, (_, i) => ({
         id: 1000 + i,
-        position: { x: 1500 + i * 1000, y: 840 },
+        position: { x: 1500 + i * 800, y: 840 },
         velocity: { x: 0, y: 0 },
         width: 50,
         height: 60,
@@ -73,7 +73,7 @@ export const createInitialState = (): GameState => {
         platformIndex: 0,
         type: 'red' as const,
       })),
-      // Add 2 ground blue demons (1:5 ratio)
+      // Add 2 ground blue demons (1:5 ratio with red)
       ...Array.from({ length: 2 }, (_, i) => ({
         id: 2000 + i,
         position: { x: 3000 + i * 3000, y: 840 },
@@ -86,6 +86,18 @@ export const createInitialState = (): GameState => {
         type: 'blue' as const,
         lastShootTime: 0,
         nextShootTime: 5000 + Math.random() * 5000,
+      })),
+      // Add 2 ground purple demons (1:5 ratio with red)
+      ...Array.from({ length: 2 }, (_, i) => ({
+        id: 3000 + i,
+        position: { x: 2000 + i * 3500, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0,
+        type: 'purple' as const,
       }))
     ],
     projectiles: [],
@@ -248,7 +260,18 @@ export const updateGameState = (state: GameState): GameState => {
   if (newState.enemies.length < 5) {
     const platformIndex = Math.floor(Math.random() * (state.platforms.length - 1)) + 1;
     const platform = state.platforms[platformIndex];
-    const isBlue = Math.random() < 0.16; // ~1:5 ratio for blue demons
+    const rand = Math.random();
+    let type: 'red' | 'blue' | 'purple';
+    
+    // Ratio 5:1:1 (Red:Blue:Purple)
+    if (rand < 5/7) {
+      type = 'red';
+    } else if (rand < 6/7) {
+      type = 'blue';
+    } else {
+      type = 'purple';
+    }
+    
     newState.enemies.push({
       id: Date.now(),
       position: {
@@ -261,9 +284,9 @@ export const updateGameState = (state: GameState): GameState => {
       hp: 1,
       direction: Math.random() > 0.5 ? 1 : -1,
       platformIndex,
-      type: isBlue ? 'blue' : 'red',
-      lastShootTime: isBlue ? Date.now() : undefined,
-      nextShootTime: isBlue ? Date.now() + 5000 + Math.random() * 5000 : undefined,
+      type,
+      lastShootTime: type === 'blue' ? Date.now() : undefined,
+      nextShootTime: type === 'blue' ? Date.now() + 5000 + Math.random() * 5000 : undefined,
     });
   }
 
@@ -339,6 +362,14 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, p
   if (!newEnemy.isCharging) {
     newEnemy.velocity.x = newEnemy.direction * 2;
     newEnemy.position.x += newEnemy.velocity.x;
+  }
+  
+  // Purple demons jump randomly
+  if (newEnemy.type === 'purple' && Math.random() < 0.01) {
+    // Check if on platform before jumping
+    if (Math.abs(newEnemy.position.y + newEnemy.height - platform.y) < 10 && newEnemy.velocity.y === 0) {
+      newEnemy.velocity.y = -12; // Lower jump than player (-18)
+    }
   }
 
   // Turn around at platform edges and clamp within bounds
