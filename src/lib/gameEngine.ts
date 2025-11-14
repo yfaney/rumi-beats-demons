@@ -7,93 +7,8 @@ const STAGE_WIDTH = 10000;
 const STAGE_HEIGHT = 1080;
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
-const AIRPLANE_WIDTH = 2000;
 
-export const createInitialState = (stage: number = 1): GameState => {
-  if (stage === 1) {
-    return createStage1State();
-  }
-  return createStage2State();
-};
-
-const createStage1State = (): GameState => {
-  // Airplane stage - single platform representing the plane
-  const platforms: Platform[] = [];
-  platforms.push({ x: 0, y: 600, width: AIRPLANE_WIDTH, height: 100 });
-
-  // Add 5-7 demons on the airplane
-  const enemyCount = 5 + Math.floor(Math.random() * 3); // 5-7 demons
-  const enemies: Enemy[] = [];
-  
-  for (let i = 0; i < enemyCount; i++) {
-    const rand = Math.random();
-    let type: 'red' | 'blue' | 'purple';
-    
-    if (rand < 5/7) {
-      type = 'red';
-    } else if (rand < 6/7) {
-      type = 'blue';
-    } else {
-      type = 'purple';
-    }
-    
-    enemies.push({
-      id: i,
-      position: {
-        x: 400 + i * 200,
-        y: 540,
-      },
-      velocity: { x: 0, y: 0 },
-      width: 50,
-      height: 60,
-      hp: 1,
-      direction: Math.random() > 0.5 ? 1 : -1,
-      platformIndex: 0,
-      type,
-      lastShootTime: type === 'blue' ? 0 : undefined,
-      nextShootTime: type === 'blue' ? 5000 + Math.random() * 5000 : undefined,
-    });
-  }
-
-  // Generate clouds
-  const cloudPositions = Array.from({ length: 20 }, (_, i) => ({
-    x: i * 300 + Math.random() * 200,
-    y: Math.random() * 400 + 100,
-    size: 40 + Math.random() * 60,
-  }));
-
-  return {
-    player: {
-      position: { x: 100, y: 500 },
-      velocity: { x: 0, y: 0 },
-      width: 50,
-      height: 70,
-      hp: 10,
-      maxHp: 10,
-      isAttacking: false,
-      isDucking: false,
-      isKnockedDown: false,
-      attackFrame: 0,
-      facingRight: true,
-      isInvincible: false,
-      invincibilityEndTime: 0,
-    },
-    enemies,
-    projectiles: [],
-    platforms,
-    score: 0,
-    camera: { x: 0, y: 0 },
-    keys: {},
-    killCount: 0,
-    isGameEnded: false,
-    windowLightTime: Date.now(),
-    windowLightStates: Array.from({ length: 10 }, () => Math.random() > 0.3),
-    stage: 1,
-    cloudPositions,
-  };
-};
-
-const createStage2State = (): GameState => {
+export const createInitialState = (): GameState => {
   const platforms: Platform[] = [];
   // Ground
   platforms.push({ x: 0, y: 900, width: STAGE_WIDTH, height: 100 });
@@ -194,7 +109,6 @@ const createStage2State = (): GameState => {
     isGameEnded: false,
     windowLightTime: Date.now(),
     windowLightStates: Array.from({ length: 100 }, () => Math.random() > 0.3),
-    stage: 2,
   };
 };
 
@@ -212,44 +126,20 @@ export const updateGameState = (state: GameState): GameState => {
   // Update window lights every 5 seconds
   if (currentTime - newState.windowLightTime > 5000) {
     newState.windowLightTime = currentTime;
-    const lightCount = newState.stage === 1 ? 10 : 100;
-    newState.windowLightStates = Array.from({ length: lightCount }, () => Math.random() > 0.3);
+    newState.windowLightStates = Array.from({ length: 100 }, () => Math.random() > 0.3);
   }
   
-  // Stage 1: Check if player jumped off the airplane (broken nose cone at x = AIRPLANE_WIDTH)
-  if (newState.stage === 1) {
-    if (newState.player.position.x > AIRPLANE_WIDTH - 100) {
-      // Transition to stage 2
-      return createStage2State();
-    }
-    
-    // Update cloud positions (move left to simulate plane movement)
-    if (newState.cloudPositions) {
-      newState.cloudPositions = newState.cloudPositions.map(cloud => ({
-        ...cloud,
-        x: cloud.x - 2,
-      }));
-      
-      // Wrap clouds around
-      newState.cloudPositions = newState.cloudPositions.map(cloud => 
-        cloud.x < -200 ? { ...cloud, x: SCREEN_WIDTH + 200 } : cloud
-      );
-    }
-  }
-  
-  // Stage 2: Check if player reached the gate (end of map)
-  if (newState.stage === 2) {
-    const gateX = STAGE_WIDTH - 100;
-    const gateY = 900 - 200;
-    const gateHeight = 200;
-    if (
-      newState.player.position.x + newState.player.width > gateX &&
-      newState.player.position.y + newState.player.height > gateY &&
-      newState.player.position.y < gateY + gateHeight
-    ) {
-      newState.isGameEnded = true;
-      return newState;
-    }
+  // Check if player reached the gate (end of map)
+  const gateX = STAGE_WIDTH - 100;
+  const gateY = 900 - 200;
+  const gateHeight = 200;
+  if (
+    newState.player.position.x + newState.player.width > gateX &&
+    newState.player.position.y + newState.player.height > gateY &&
+    newState.player.position.y < gateY + gateHeight
+  ) {
+    newState.isGameEnded = true;
+    return newState;
   }
   
   // Update player
@@ -361,18 +251,13 @@ export const updateGameState = (state: GameState): GameState => {
   }
 
   // Update camera
-  if (newState.stage === 1) {
-    // Fixed camera for airplane stage
-    newState.camera.x = 0;
-  } else {
-    newState.camera.x = Math.max(0, Math.min(
-      newState.player.position.x - SCREEN_WIDTH / 2,
-      STAGE_WIDTH - SCREEN_WIDTH
-    ));
-  }
+  newState.camera.x = Math.max(0, Math.min(
+    newState.player.position.x - SCREEN_WIDTH / 2,
+    STAGE_WIDTH - SCREEN_WIDTH
+  ));
 
-  // Spawn new enemies if needed (only in stage 2)
-  if (newState.stage === 2 && newState.enemies.length < 5) {
+  // Spawn new enemies if needed
+  if (newState.enemies.length < 5) {
     const platformIndex = Math.floor(Math.random() * (state.platforms.length - 1)) + 1;
     const platform = state.platforms[platformIndex];
     const rand = Math.random();

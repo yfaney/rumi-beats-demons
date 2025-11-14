@@ -70,6 +70,4 @@ export interface GameState {
   isGameEnded?: boolean;
   windowLightTime: number;
   windowLightStates: boolean[];
-  stage: number;
-  cloudPositions?: { x: number; y: number; size: number }[];
 }
