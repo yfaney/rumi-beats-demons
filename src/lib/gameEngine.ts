@@ -14,6 +14,9 @@ export const createInitialState = (): GameState => {
   // Start with Stage 2 (airplane)
   const platforms: Platform[] = [];
   platforms.push({ x: 0, y: 480, width: STAGE2_WIDTH, height: 60 });
+  
+  // Add starting barrier wall (blocks demons, players can jump over)
+  platforms.push({ x: 350, y: 280, width: 30, height: 200 });
 
   const enemies: Enemy[] = [];
   // 10 demons with ratio red:blue:purple = 5:3:2
@@ -33,7 +36,7 @@ export const createInitialState = (): GameState => {
       height: 60,
       hp: 1,
       direction: Math.random() > 0.5 ? 1 : -1,
-      platformIndex: 0,
+      platformIndex: 0, // Ground platform
       type,
       lastShootTime: type === 'blue' ? Date.now() : undefined,
       nextShootTime: type === 'blue' ? Date.now() + 5000 + Math.random() * 5000 : undefined,
@@ -76,9 +79,6 @@ const createStage1State = (prevState: GameState): GameState => {
   // Transition to Stage 1 (night city)
   const platforms: Platform[] = [];
   platforms.push({ x: 0, y: 900, width: STAGE1_WIDTH, height: 100 });
-  
-  // Add starting barrier wall (players can jump over it, enemies turn around)
-  platforms.push({ x: 350, y: 700, width: 30, height: 200 });
   
   // Procedurally generate floating platforms
   let xPos = 400;
@@ -446,6 +446,24 @@ const updateEnemy = (enemy: Enemy, platforms: Platform[], currentTime: number, p
   // Simple AI: move back and forth on platform (unless charging)
   if (!newEnemy.isCharging) {
     newEnemy.velocity.x = newEnemy.direction * 2;
+    
+    // Check collision with all platforms (barriers)
+    const nextX = newEnemy.position.x + newEnemy.velocity.x;
+    for (const obstacle of platforms) {
+      // Check if moving into an obstacle
+      if (
+        nextX + newEnemy.width > obstacle.x &&
+        nextX < obstacle.x + obstacle.width &&
+        newEnemy.position.y + newEnemy.height > obstacle.y &&
+        newEnemy.position.y < obstacle.y + obstacle.height
+      ) {
+        // Hit a wall/barrier, turn around
+        newEnemy.direction *= -1;
+        newEnemy.velocity.x = newEnemy.direction * 2;
+        break;
+      }
+    }
+    
     newEnemy.position.x += newEnemy.velocity.x;
   }
   
