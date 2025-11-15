@@ -77,6 +77,9 @@ const createStage1State = (prevState: GameState): GameState => {
   const platforms: Platform[] = [];
   platforms.push({ x: 0, y: 900, width: STAGE1_WIDTH, height: 100 });
   
+  // Add starting barrier wall (players can jump over it, enemies turn around)
+  platforms.push({ x: 350, y: 700, width: 30, height: 200 });
+  
   // Procedurally generate floating platforms
   let xPos = 400;
   while (xPos < STAGE1_WIDTH - 800) {
