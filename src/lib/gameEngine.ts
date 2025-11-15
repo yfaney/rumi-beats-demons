@@ -11,115 +11,8 @@ const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
 
 export const createInitialState = (): GameState => {
+  // Start with Stage 2 (airplane)
   const platforms: Platform[] = [];
-  // Ground
-  platforms.push({ x: 0, y: 900, width: STAGE1_WIDTH, height: 100 });
-  
-  // Procedurally generate floating platforms
-  let xPos = 400;
-  while (xPos < STAGE1_WIDTH - 800) {
-    const width = 300 + Math.floor(Math.random() * 200); // 300-500
-    const y = 520 + Math.floor(Math.random() * 260); // 520-780
-    platforms.push({ x: xPos, y, width, height: 30 });
-    // Advance with random gaps 200-600
-    xPos += width + 200 + Math.floor(Math.random() * 400);
-  }
-
-  const enemies: Enemy[] = [];
-  for (let i = 0; i < 15; i++) {
-    const platformIndex = Math.floor(Math.random() * (platforms.length - 1)) + 1;
-    const platform = platforms[platformIndex];
-    enemies.push({
-      id: i,
-      position: {
-        x: platform.x + Math.random() * (platform.width - 60),
-        y: platform.y - 60,
-      },
-      velocity: { x: 0, y: 0 },
-      width: 50,
-      height: 60,
-      hp: 1,
-      direction: Math.random() > 0.5 ? 1 : -1,
-      platformIndex,
-      type: 'red',
-    });
-  }
-
-  return {
-    player: {
-      position: { x: 100, y: 800 },
-      velocity: { x: 0, y: 0 },
-      width: 50,
-      height: 70,
-      hp: 10,
-      maxHp: 10,
-      isAttacking: false,
-      isDucking: false,
-      isKnockedDown: false,
-      attackFrame: 0,
-      facingRight: true,
-      isInvincible: false,
-      invincibilityEndTime: 0,
-    },
-    enemies: [
-      ...enemies,
-      // Add 10 ground red demons
-      ...Array.from({ length: 10 }, (_, i) => ({
-        id: 1000 + i,
-        position: { x: 1500 + i * 800, y: 840 },
-        velocity: { x: 0, y: 0 },
-        width: 50,
-        height: 60,
-        hp: 1,
-        direction: Math.random() > 0.5 ? 1 : -1,
-        platformIndex: 0,
-        type: 'red' as const,
-      })),
-      // Add 2 ground blue demons (1:5 ratio with red)
-      ...Array.from({ length: 2 }, (_, i) => ({
-        id: 2000 + i,
-        position: { x: 3000 + i * 3000, y: 840 },
-        velocity: { x: 0, y: 0 },
-        width: 50,
-        height: 60,
-        hp: 1,
-        direction: Math.random() > 0.5 ? 1 : -1,
-        platformIndex: 0,
-        type: 'blue' as const,
-        lastShootTime: 0,
-        nextShootTime: 5000 + Math.random() * 5000,
-      })),
-      // Add 2 ground purple demons (1:5 ratio with red)
-      ...Array.from({ length: 2 }, (_, i) => ({
-        id: 3000 + i,
-        position: { x: 2000 + i * 3500, y: 840 },
-        velocity: { x: 0, y: 0 },
-        width: 50,
-        height: 60,
-        hp: 1,
-        direction: Math.random() > 0.5 ? 1 : -1,
-        platformIndex: 0,
-        type: 'purple' as const,
-      }))
-    ],
-    projectiles: [],
-    platforms,
-    score: 0,
-    camera: { x: 0, y: 0 },
-    keys: {},
-    killCount: 0,
-    isGameEnded: false,
-    windowLightTime: Date.now(),
-    windowLightStates: Array.from({ length: 100 }, () => Math.random() > 0.3),
-    stage: 1,
-    stageWidth: STAGE1_WIDTH,
-    stageHeight: STAGE1_HEIGHT,
-  };
-};
-
-const createStage2State = (prevState: GameState): GameState => {
-  const platforms: Platform[] = [];
-  // Ground only
   platforms.push({ x: 0, y: 480, width: STAGE2_WIDTH, height: 60 });
 
   const enemies: Enemy[] = [];
@@ -153,8 +46,8 @@ const createStage2State = (prevState: GameState): GameState => {
       velocity: { x: 0, y: 0 },
       width: 50,
       height: 70,
-      hp: prevState.player.hp,
-      maxHp: prevState.player.maxHp,
+      hp: 10,
+      maxHp: 10,
       isAttacking: false,
       isDucking: false,
       isKnockedDown: false,
@@ -166,16 +59,122 @@ const createStage2State = (prevState: GameState): GameState => {
     enemies,
     projectiles: [],
     platforms,
-    score: prevState.score,
+    score: 0,
     camera: { x: 0, y: 0 },
-    keys: prevState.keys,
-    killCount: prevState.killCount,
+    keys: {},
+    killCount: 0,
     isGameEnded: false,
     windowLightTime: Date.now(),
     windowLightStates: Array.from({ length: 20 }, () => Math.random() > 0.3),
     stage: 2,
     stageWidth: STAGE2_WIDTH,
     stageHeight: STAGE2_HEIGHT,
+  };
+};
+
+const createStage1State = (prevState: GameState): GameState => {
+  // Transition to Stage 1 (night city)
+  const platforms: Platform[] = [];
+  platforms.push({ x: 0, y: 900, width: STAGE1_WIDTH, height: 100 });
+  
+  // Procedurally generate floating platforms
+  let xPos = 400;
+  while (xPos < STAGE1_WIDTH - 800) {
+    const width = 300 + Math.floor(Math.random() * 200);
+    const y = 520 + Math.floor(Math.random() * 260);
+    platforms.push({ x: xPos, y, width, height: 30 });
+    xPos += width + 200 + Math.floor(Math.random() * 400);
+  }
+
+  const enemies: Enemy[] = [];
+  for (let i = 0; i < 15; i++) {
+    const platformIndex = Math.floor(Math.random() * (platforms.length - 1)) + 1;
+    const platform = platforms[platformIndex];
+    enemies.push({
+      id: i,
+      position: {
+        x: platform.x + Math.random() * (platform.width - 60),
+        y: platform.y - 60,
+      },
+      velocity: { x: 0, y: 0 },
+      width: 50,
+      height: 60,
+      hp: 1,
+      direction: Math.random() > 0.5 ? 1 : -1,
+      platformIndex,
+      type: 'red',
+    });
+  }
+
+  return {
+    player: {
+      position: { x: 100, y: 800 },
+      velocity: { x: 0, y: 0 },
+      width: 50,
+      height: 70,
+      hp: prevState.player.hp,
+      maxHp: prevState.player.maxHp,
+      isAttacking: false,
+      isDucking: false,
+      isKnockedDown: false,
+      attackFrame: 0,
+      facingRight: true,
+      isInvincible: false,
+      invincibilityEndTime: 0,
+    },
+    enemies: [
+      ...enemies,
+      // Add 10 ground red demons
+      ...Array.from({ length: 10 }, (_, i) => ({
+        id: 1000 + i,
+        position: { x: 1500 + i * 800, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0,
+        type: 'red' as const,
+      })),
+      // Add 2 ground blue demons
+      ...Array.from({ length: 2 }, (_, i) => ({
+        id: 2000 + i,
+        position: { x: 3000 + i * 3000, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0,
+        type: 'blue' as const,
+        lastShootTime: 0,
+        nextShootTime: 5000 + Math.random() * 5000,
+      })),
+      // Add 2 ground purple demons
+      ...Array.from({ length: 2 }, (_, i) => ({
+        id: 3000 + i,
+        position: { x: 2000 + i * 3500, y: 840 },
+        velocity: { x: 0, y: 0 },
+        width: 50,
+        height: 60,
+        hp: 1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        platformIndex: 0,
+        type: 'purple' as const,
+      }))
+    ],
+    projectiles: [],
+    platforms,
+    score: prevState.score,
+    camera: { x: 0, y: 0 },
+    keys: prevState.keys,
+    killCount: prevState.killCount,
+    isGameEnded: false,
+    windowLightTime: Date.now(),
+    windowLightStates: Array.from({ length: 100 }, () => Math.random() > 0.3),
+    stage: 1,
+    stageWidth: STAGE1_WIDTH,
+    stageHeight: STAGE1_HEIGHT,
   };
 };
 
@@ -199,7 +198,15 @@ export const updateGameState = (state: GameState): GameState => {
   }
   
   // Check if player reached the gate/portal (end of stage)
-  if (newState.stage === 1) {
+  if (newState.stage === 2) {
+    // Stage 2 (airplane) - exit portal at the end
+    const portalX = newState.stageWidth - 100;
+    if (newState.player.position.x + newState.player.width > portalX) {
+      // Transition to stage 1 (night city)
+      return createStage1State(newState);
+    }
+  } else if (newState.stage === 1) {
+    // Stage 1 (night city) - final gate
     const gateX = newState.stageWidth - 100;
     const gateY = 900 - 200;
     const gateHeight = 200;
@@ -208,13 +215,7 @@ export const updateGameState = (state: GameState): GameState => {
       newState.player.position.y + newState.player.height > gateY &&
       newState.player.position.y < gateY + gateHeight
     ) {
-      // Transition to stage 2
-      return createStage2State(newState);
-    }
-  } else if (newState.stage === 2) {
-    // Exit portal at the end of airplane
-    const portalX = newState.stageWidth - 100;
-    if (newState.player.position.x + newState.player.width > portalX) {
+      // Game ends
       newState.isGameEnded = true;
       return newState;
     }
