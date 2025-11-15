@@ -93,83 +93,132 @@ export const Game = () => {
     ctx.fillStyle = '#0d0616';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Draw gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    gradient.addColorStop(0, '#0d0616');
-    gradient.addColorStop(1, '#1a0d2e');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    if (state.stage === 1) {
+      // Stage 1: Night city background
+      const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+      gradient.addColorStop(0, '#0d0616');
+      gradient.addColorStop(1, '#1a0d2e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Draw stars
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 100; i++) {
-      const x = (i * 137) % SCREEN_WIDTH;
-      const y = (i * 73) % (SCREEN_HEIGHT * 0.6);
-      const size = (i % 3) + 1;
-      ctx.fillRect(x, y, size, size);
+      // Draw stars
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 100; i++) {
+        const x = (i * 137) % SCREEN_WIDTH;
+        const y = (i * 73) % (SCREEN_HEIGHT * 0.6);
+        const size = (i % 3) + 1;
+        ctx.fillRect(x, y, size, size);
+      }
+
+      // Draw crescent moon
+      const moonX = SCREEN_WIDTH - 150;
+      const moonY = 100;
+      const moonRadius = 50;
+      
+      ctx.fillStyle = '#f0f0f0';
+      ctx.shadowColor = '#f0f0f0';
+      ctx.shadowBlur = 30;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = '#0d0616';
+      ctx.beginPath();
+      ctx.arc(moonX + 25, moonY - 8, moonRadius * 0.85, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+    } else if (state.stage === 2) {
+      // Stage 2: Airplane interior
+      const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+      gradient.addColorStop(0, '#1a0d2e');
+      gradient.addColorStop(1, '#0d0616');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
-
-    // Draw crescent moon (top-right corner)
-    const moonX = SCREEN_WIDTH - 150;
-    const moonY = 100;
-    const moonRadius = 50;
-    
-    // Draw crescent moon with halo only on visible part
-    ctx.fillStyle = '#f0f0f0';
-    ctx.shadowColor = '#f0f0f0';
-    ctx.shadowBlur = 30;
-    ctx.beginPath();
-    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Cover part with background to create crescent (no shadow on this)
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = '#0d0616';
-    ctx.beginPath();
-    ctx.arc(moonX + 25, moonY - 8, moonRadius * 0.85, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Reset shadow
-    ctx.shadowBlur = 0;
 
     // Save context and apply camera transform
     ctx.save();
     ctx.translate(-state.camera.x, 0);
 
-    // Draw buildings under platforms (visual only, not ground)
-    const groundY = 900;
-    for (let i = 1; i < state.platforms.length; i++) {
-      const platform = state.platforms[i];
-      const buildingHeight = groundY - (platform.y + platform.height);
-      
-      if (buildingHeight > 0) {
-        // Building body
-        ctx.fillStyle = '#555555';
-        ctx.fillRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
+    if (state.stage === 1) {
+      // Stage 1: Buildings
+      const groundY = 900;
+      for (let i = 1; i < state.platforms.length; i++) {
+        const platform = state.platforms[i];
+        const buildingHeight = groundY - (platform.y + platform.height);
         
-        // Windows
-        const windowRows = Math.floor(buildingHeight / 30);
-        const windowCols = Math.floor(platform.width / 40);
-        for (let row = 0; row < windowRows; row++) {
-          for (let col = 0; col < windowCols; col++) {
-            const windowIndex = (i * 100 + row * 10 + col) % state.windowLightStates.length;
-            const isLit = state.windowLightStates[windowIndex];
-            ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
-            const wx = platform.x + 10 + col * 40;
-            const wy = platform.y + platform.height + 10 + row * 30;
-            ctx.fillRect(wx, wy, 20, 15);
+        if (buildingHeight > 0) {
+          ctx.fillStyle = '#555555';
+          ctx.fillRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
+          
+          const windowRows = Math.floor(buildingHeight / 30);
+          const windowCols = Math.floor(platform.width / 40);
+          for (let row = 0; row < windowRows; row++) {
+            for (let col = 0; col < windowCols; col++) {
+              const windowIndex = (i * 100 + row * 10 + col) % state.windowLightStates.length;
+              const isLit = state.windowLightStates[windowIndex];
+              ctx.fillStyle = isLit ? '#fbbf24' : '#1a1a1a';
+              const wx = platform.x + 10 + col * 40;
+              const wy = platform.y + platform.height + 10 + row * 30;
+              ctx.fillRect(wx, wy, 20, 15);
+            }
           }
+          
+          ctx.strokeStyle = '#333333';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
         }
+      }
+    } else if (state.stage === 2) {
+      // Stage 2: Airplane interior
+      // Draw airplane floor/ceiling (white interior)
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(0, 0, state.stageWidth, 80); // Ceiling
+      ctx.fillRect(0, 480, state.stageWidth, 60); // Floor
+      
+      // Draw airplane seats (rows of seats)
+      for (let x = 100; x < state.stageWidth; x += 200) {
+        // Left seats
+        ctx.fillStyle = '#4a5568';
+        ctx.fillRect(x, 200, 60, 200);
+        ctx.fillStyle = '#2d3748';
+        ctx.fillRect(x, 200, 60, 40); // Headrest
         
-        // Building outline
-        ctx.strokeStyle = '#333333';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(platform.x, platform.y + platform.height, platform.width, buildingHeight);
+        // Right seats
+        ctx.fillRect(x + 80, 200, 60, 200);
+        ctx.fillStyle = '#2d3748';
+        ctx.fillRect(x + 80, 200, 60, 40); // Headrest
+      }
+      
+      // Draw airplane windows (showing night sky)
+      for (let i = 0; i < 20; i++) {
+        const x = 200 + i * 250;
+        const y = 100;
+        
+        // Window frame
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fillRect(x, y, 80, 60);
+        
+        // Window (night sky)
+        const windowGradient = ctx.createLinearGradient(x, y, x, y + 60);
+        windowGradient.addColorStop(0, '#0d0616');
+        windowGradient.addColorStop(1, '#1a0d2e');
+        ctx.fillStyle = windowGradient;
+        ctx.fillRect(x + 5, y + 5, 70, 50);
+        
+        // Random stars in window
+        const windowIndex = i % state.windowLightStates.length;
+        if (state.windowLightStates[windowIndex]) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x + 20 + (i % 3) * 15, y + 15 + (i % 2) * 15, 2, 2);
+        }
       }
     }
 
-    // Draw platforms (simple)
+    // Draw platforms
     for (const platform of state.platforms) {
       ctx.fillStyle = '#3d2f4d';
       ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
@@ -178,20 +227,35 @@ export const Game = () => {
       ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
     }
 
-    // Draw gate at the end
-    const gateX = 10000 - 100;
-    const gateY = 900 - 200;
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(gateX, gateY, 80, 200);
-    ctx.strokeStyle = '#7c3aed';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(gateX, gateY, 80, 200);
-    
-    // Gate glow effect
-    ctx.shadowColor = '#7c3aed';
-    ctx.shadowBlur = 20;
-    ctx.strokeRect(gateX, gateY, 80, 200);
-    ctx.shadowBlur = 0;
+    // Draw gate/portal at the end
+    if (state.stage === 1) {
+      const gateX = state.stageWidth - 100;
+      const gateY = 900 - 200;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(gateX, gateY, 80, 200);
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(gateX, gateY, 80, 200);
+      
+      ctx.shadowColor = '#7c3aed';
+      ctx.shadowBlur = 20;
+      ctx.strokeRect(gateX, gateY, 80, 200);
+      ctx.shadowBlur = 0;
+    } else if (state.stage === 2) {
+      // Exit portal (airplane door)
+      const portalX = state.stageWidth - 100;
+      const portalY = 280;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(portalX, portalY, 80, 200);
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(portalX, portalY, 80, 200);
+      
+      ctx.shadowColor = '#7c3aed';
+      ctx.shadowBlur = 20;
+      ctx.strokeRect(portalX, portalY, 80, 200);
+      ctx.shadowBlur = 0;
+    }
 
     // Draw enemies (demons)
     for (const enemy of state.enemies) {

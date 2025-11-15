@@ -70,4 +70,7 @@ export interface GameState {
   isGameEnded?: boolean;
   windowLightTime: number;
   windowLightStates: boolean[];
+  stage: number;
+  stageWidth: number;
+  stageHeight: number;
 }

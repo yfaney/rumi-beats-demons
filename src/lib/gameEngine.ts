@@ -3,19 +3,21 @@ import { GameState, Player, Enemy, Platform, Position } from "@/types/game";
 const GRAVITY = 0.5;
 const JUMP_FORCE = -18;
 const MOVE_SPEED = 7.5;
-const STAGE_WIDTH = 10000;
-const STAGE_HEIGHT = 1080;
+const STAGE1_WIDTH = 10000;
+const STAGE1_HEIGHT = 1080;
+const STAGE2_WIDTH = 5000;
+const STAGE2_HEIGHT = 540;
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
 
 export const createInitialState = (): GameState => {
   const platforms: Platform[] = [];
   // Ground
-  platforms.push({ x: 0, y: 900, width: STAGE_WIDTH, height: 100 });
+  platforms.push({ x: 0, y: 900, width: STAGE1_WIDTH, height: 100 });
   
   // Procedurally generate floating platforms
   let xPos = 400;
-  while (xPos < STAGE_WIDTH - 800) {
+  while (xPos < STAGE1_WIDTH - 800) {
     const width = 300 + Math.floor(Math.random() * 200); // 300-500
     const y = 520 + Math.floor(Math.random() * 260); // 520-780
     platforms.push({ x: xPos, y, width, height: 30 });
@@ -109,6 +111,71 @@ export const createInitialState = (): GameState => {
     isGameEnded: false,
     windowLightTime: Date.now(),
     windowLightStates: Array.from({ length: 100 }, () => Math.random() > 0.3),
+    stage: 1,
+    stageWidth: STAGE1_WIDTH,
+    stageHeight: STAGE1_HEIGHT,
+  };
+};
+
+const createStage2State = (prevState: GameState): GameState => {
+  const platforms: Platform[] = [];
+  // Ground only
+  platforms.push({ x: 0, y: 480, width: STAGE2_WIDTH, height: 60 });
+
+  const enemies: Enemy[] = [];
+  // 10 demons with ratio red:blue:purple = 5:3:2
+  const types: ('red' | 'blue' | 'purple')[] = [
+    'red', 'red', 'red', 'red', 'red',
+    'blue', 'blue', 'blue',
+    'purple', 'purple'
+  ];
+  
+  for (let i = 0; i < 10; i++) {
+    const type = types[i];
+    enemies.push({
+      id: 4000 + i,
+      position: { x: 500 + i * 400, y: 420 },
+      velocity: { x: 0, y: 0 },
+      width: 50,
+      height: 60,
+      hp: 1,
+      direction: Math.random() > 0.5 ? 1 : -1,
+      platformIndex: 0,
+      type,
+      lastShootTime: type === 'blue' ? Date.now() : undefined,
+      nextShootTime: type === 'blue' ? Date.now() + 5000 + Math.random() * 5000 : undefined,
+    });
+  }
+
+  return {
+    player: {
+      position: { x: 100, y: 380 },
+      velocity: { x: 0, y: 0 },
+      width: 50,
+      height: 70,
+      hp: prevState.player.hp,
+      maxHp: prevState.player.maxHp,
+      isAttacking: false,
+      isDucking: false,
+      isKnockedDown: false,
+      attackFrame: 0,
+      facingRight: true,
+      isInvincible: false,
+      invincibilityEndTime: 0,
+    },
+    enemies,
+    projectiles: [],
+    platforms,
+    score: prevState.score,
+    camera: { x: 0, y: 0 },
+    keys: prevState.keys,
+    killCount: prevState.killCount,
+    isGameEnded: false,
+    windowLightTime: Date.now(),
+    windowLightStates: Array.from({ length: 20 }, () => Math.random() > 0.3),
+    stage: 2,
+    stageWidth: STAGE2_WIDTH,
+    stageHeight: STAGE2_HEIGHT,
   };
 };
 
@@ -116,6 +183,8 @@ export const updateGameState = (state: GameState): GameState => {
   if (state.player.isKnockedDown || state.isGameEnded) return state;
 
   const newState = { ...state };
+  const STAGE_WIDTH = newState.stageWidth;
+  const STAGE_HEIGHT = newState.stageHeight;
   
   // Update invincibility state
   const currentTime = Date.now();
@@ -129,21 +198,32 @@ export const updateGameState = (state: GameState): GameState => {
     newState.windowLightStates = Array.from({ length: 100 }, () => Math.random() > 0.3);
   }
   
-  // Check if player reached the gate (end of map)
-  const gateX = STAGE_WIDTH - 100;
-  const gateY = 900 - 200;
-  const gateHeight = 200;
-  if (
-    newState.player.position.x + newState.player.width > gateX &&
-    newState.player.position.y + newState.player.height > gateY &&
-    newState.player.position.y < gateY + gateHeight
-  ) {
-    newState.isGameEnded = true;
-    return newState;
+  // Check if player reached the gate/portal (end of stage)
+  if (newState.stage === 1) {
+    const gateX = newState.stageWidth - 100;
+    const gateY = 900 - 200;
+    const gateHeight = 200;
+    if (
+      newState.player.position.x + newState.player.width > gateX &&
+      newState.player.position.y + newState.player.height > gateY &&
+      newState.player.position.y < gateY + gateHeight
+    ) {
+      // Transition to stage 2
+      return createStage2State(newState);
+    }
+  } else if (newState.stage === 2) {
+    // Exit portal at the end of airplane
+    const portalX = newState.stageWidth - 100;
+    if (newState.player.position.x + newState.player.width > portalX) {
+      newState.isGameEnded = true;
+      return newState;
+    }
   }
   
   // Update player
   newState.player = updatePlayer(state.player, state.keys, state.platforms);
+  // Apply stage width bounds
+  newState.player.position.x = Math.max(0, Math.min(newState.player.position.x, STAGE_WIDTH - newState.player.width));
   
   // Update enemies
   newState.enemies = state.enemies
@@ -325,8 +405,9 @@ const updatePlayer = (player: Player, keys: { [key: string]: boolean }, platform
   newPlayer.position.x += newPlayer.velocity.x;
   newPlayer.position.y += newPlayer.velocity.y;
 
-  // Bounds checking
-  newPlayer.position.x = Math.max(0, Math.min(newPlayer.position.x, STAGE_WIDTH - newPlayer.width));
+  // Bounds checking - need to pass stage width from game state
+  // For now using a large bound, will be clamped by camera
+  newPlayer.position.x = Math.max(0, newPlayer.position.x);
 
   // Platform collision
   for (const platform of platforms) {
