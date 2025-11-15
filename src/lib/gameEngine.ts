@@ -336,8 +336,8 @@ export const updateGameState = (state: GameState): GameState => {
     STAGE_WIDTH - SCREEN_WIDTH
   ));
 
-  // Spawn new enemies if needed
-  if (newState.enemies.length < 5) {
+  // Spawn new enemies if needed (only in stage 1)
+  if (newState.stage === 1 && newState.enemies.length < 5) {
     const platformIndex = Math.floor(Math.random() * (state.platforms.length - 1)) + 1;
     const platform = state.platforms[platformIndex];
     const rand = Math.random();
