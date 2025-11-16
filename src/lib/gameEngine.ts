@@ -19,14 +19,14 @@ export const createInitialState = (): GameState => {
   platforms.push({ x: 350, y: 280, width: 30, height: 200 });
 
   const enemies: Enemy[] = [];
-  // 10 demons with ratio red:blue:purple = 5:3:2
+  // 5 demons with ratio red:blue:purple = 2:2:1 (halved from original)
   const types: ('red' | 'blue' | 'purple')[] = [
-    'red', 'red', 'red', 'red', 'red',
-    'blue', 'blue', 'blue',
-    'purple', 'purple'
+    'red', 'red',
+    'blue', 'blue',
+    'purple'
   ];
   
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 5; i++) {
     const type = types[i];
     enemies.push({
       id: 4000 + i,
@@ -90,7 +90,7 @@ const createStage1State = (prevState: GameState): GameState => {
   }
 
   const enemies: Enemy[] = [];
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 8; i++) {
     const platformIndex = Math.floor(Math.random() * (platforms.length - 1)) + 1;
     const platform = platforms[platformIndex];
     enemies.push({
@@ -127,8 +127,8 @@ const createStage1State = (prevState: GameState): GameState => {
     },
     enemies: [
       ...enemies,
-      // Add 10 ground red demons
-      ...Array.from({ length: 10 }, (_, i) => ({
+      // Add 5 ground red demons (halved)
+      ...Array.from({ length: 5 }, (_, i) => ({
         id: 1000 + i,
         position: { x: 1500 + i * 800, y: 840 },
         velocity: { x: 0, y: 0 },
